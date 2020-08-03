@@ -44,6 +44,8 @@ void setup() {
     pinMode(PIN_LED_GREEN,OUTPUT);
     pinMode(PIN_LED_RED,OUTPUT);
 
+   
+
     //红外线
     irrecv.enableIRIn();
 
@@ -57,17 +59,19 @@ void setup() {
 
     //播放开机声音
     tmrpcm.setVolume(6);
-    tmrpcm.play("heat/a/startup.wav");
+    tmrpcm.play("h/a/startup.wav");
     while(tmrpcm.isPlaying()){
-        Serial.println(millis());
+        ;
     }
-    tmrpcm.play("heat/a/off.wav");
+//    tmrpcm.play("h/a/off.wav");
     //所有灯，一起亮一秒
-    digitalWrite(PIN_LED_GREEN,HIGH);
-    digitalWrite(PIN_LED_RED,HIGH);
-    delay(1000);
-    digitalWrite(PIN_LED_GREEN,LOW);
-    digitalWrite(PIN_LED_RED,LOW);
+//    digitalWrite(PIN_LED_GREEN,HIGH);
+//    digitalWrite(PIN_LED_RED,HIGH);
+//    delay(1000);
+//    digitalWrite(PIN_LED_GREEN,LOW);
+//    digitalWrite(PIN_LED_RED,LOW);
+
+     speakNumber(23);
 }
 
 //加热开始时间
@@ -95,6 +99,8 @@ void loop() {
             digitalWrite(PIN_RELAY,LOW);
             //恢复duration
             duration=0;
+            //播放时间语音，说明烧的时间
+            
         }
     }
     //接收红外信号
@@ -104,13 +110,13 @@ void loop() {
         //ON
         if(code==IR_CODE_ANDROID_ON){
             digitalWrite(PIN_RELAY,HIGH);
-            tmrpcm.play("heat/a/on.wav");
+            tmrpcm.play("h/a/on.wav");
             blinkForTime(PIN_LED_GREEN,2);
             //OFF
         }else if(code==IR_CODE_ANDROID_OFF){
             digitalWrite(PIN_RELAY,LOW);
             duration=0;
-            tmrpcm.play("heat/a/off.wav");
+            tmrpcm.play("h/a/off.wav");
             blinkForTime(PIN_LED_GREEN,2);
         }else if(code==IR_CODE_ANDROID_HEAT_10_MIN){
             //加热指定时长
@@ -120,37 +126,37 @@ void loop() {
             duration=HEAT_TIME_10_MIN;
             //接通继电器，开始加热
             digitalWrite(PIN_RELAY,HIGH);
-            tmrpcm.play("heat/a/heat10.wav");
+            tmrpcm.play("h/a/heat10.wav");
             blinkForTime(PIN_LED_GREEN,2);
         }else if(code==IR_CODE_ANDROID_HEAT_20_MIN){
             startTime=millis();
             duration=HEAT_TIME_20_MIN;
             digitalWrite(PIN_RELAY,HIGH);
-            tmrpcm.play("heat/a/heat20.wav");
+            tmrpcm.play("h/a/heat20.wav");
             blinkForTime(PIN_LED_GREEN,2);
         }else if(code==IR_CODE_ANDROID_HEAT_30_MIN){
             startTime=millis();
             duration=HEAT_TIME_30_MIN;
             digitalWrite(PIN_RELAY,HIGH);
-            tmrpcm.play("heat/a/heat30.wav");
+            tmrpcm.play("h/a/heat30.wav");
             blinkForTime(PIN_LED_GREEN,2);
         }else if(code==IR_CODE_ANDROID_HEAT_40_MIN){
             startTime=millis();
             duration=HEAT_TIME_40_MIN;
             digitalWrite(PIN_RELAY,HIGH);
-            tmrpcm.play("heat/a/heat40.wav");
+            tmrpcm.play("h/a/heat40.wav");
             blinkForTime(PIN_LED_GREEN,2);
         }else if(code==IR_CODE_ANDROID_HEAT_50_MIN){
             startTime=millis();
             duration=HEAT_TIME_50_MIN;
             digitalWrite(PIN_RELAY,HIGH);
-            tmrpcm.play("heat/a/heat50.wav");
+            tmrpcm.play("h/a/heat50.wav");
             blinkForTime(PIN_LED_GREEN,2);
         }else if(code==IR_CODE_ANDROID_HEAT_60_MIN){
             startTime=millis();
             duration=HEAT_TIME_60_MIN;
             digitalWrite(PIN_RELAY,HIGH);
-            tmrpcm.play("heat/a/heat60.wav");
+            tmrpcm.play("h/a/heat60.wav");
             blinkForTime(PIN_LED_GREEN,2);
         }else{
             //没有找到红外线指令
@@ -184,5 +190,60 @@ void blinkForTime(int pin,int times){
         delay(230);
         digitalWrite(pin,LOW);
         delay(70);
+    }
+}
+
+/**
+ * 说一位数字
+ */
+void speakOneBitNumber(int number){
+    if(number==1){
+        tmrpcm.play("h/a/1.wav");
+    }else if(number==2){
+        tmrpcm.play("h/a/2.wav");
+    }else if(number==3){
+        tmrpcm.play("h/a/3.wav");
+    }else if(number==4){
+        tmrpcm.play("h/a/4.wav");
+    }else if(number==5){
+        tmrpcm.play("h/a/5.wav");
+    }else if(number==6){
+        tmrpcm.play("h/a/6.wav");
+    }else if(number==7){
+        tmrpcm.play("h/a/7.wav");
+    }else if(number==8){
+        tmrpcm.play("h/a/8.wav");
+    }else if(number==9){
+        tmrpcm.play("h/a/9.wav");
+    }else if(number==10){
+        tmrpcm.play("h/a/10.wav");
+    }
+}
+
+/**
+ * 播放语音数字
+ */
+void speakNumber(int number){
+    int gewei=number%10;
+    if(number<=10){
+        speakOneBitNumber(number);
+    }else if(number>=11&&number<=19){
+        speakOneBitNumber(10);
+        while(tmrpcm.isPlaying()){
+            ;
+        }
+        speakOneBitNumber(number%10);        
+    }else if(number>=20&&number<=99){
+        speakOneBitNumber(number/10);
+        while(tmrpcm.isPlaying()){
+            ;
+        }
+        speakOneBitNumber(10);
+        while(tmrpcm.isPlaying()){
+            ;
+        }
+        if(gewei!=0){
+            speakOneBitNumber(gewei);
+        }
     }
 }
