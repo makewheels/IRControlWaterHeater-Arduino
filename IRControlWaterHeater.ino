@@ -58,7 +58,7 @@ void setup() {
     }
 
     //播放开机声音
-    tmrpcm.setVolume(6);
+    tmrpcm.setVolume(2);
     tmrpcm.play("h/a/startup.wav");
     while(tmrpcm.isPlaying()){
         ;
@@ -71,7 +71,7 @@ void setup() {
 //    digitalWrite(PIN_LED_GREEN,LOW);
 //    digitalWrite(PIN_LED_RED,LOW);
 
-     speakNumber(23);
+     speakNumber(30);
 }
 
 //加热开始时间
