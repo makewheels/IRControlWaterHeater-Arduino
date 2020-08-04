@@ -17,6 +17,25 @@
 #define PIN_LED_RED 6   //红色指示灯
 #define PIN_SPEAKER 10  //音响
 
+//EEPROM变量初始address
+//变量定义表：
+//https://shimo.im/sheets/9Jgw3HTPVPD6kj89/MODOC
+//英文名             中文名        类型                字节长度  位置区间  起始address
+//versionCode       版本号        unsigned long         4       0-3       0
+//startupCount      开机次数统计   unsigned long         4       4-7       4
+//volume            音量          int                   2       8-9       8
+//heatedTimeMillis  总共烧的时长   unsigned long long    8      10-17      10
+//startCount        开始烧水次数   unsigned long         4      18-21      18
+//stopCount         停止烧水次数   unsigned long         4      22-25      22
+
+#define VERSION_CODE 1
+#define EEPROM_ADDRESS_VERSION_CODE 0
+#define EEPROM_ADDRESS_STARTUP_COUNT 4
+#define EEPROM_ADDRESS_VOLUME 8
+#define EEPROM_ADDRESS_HEATED_TIME_MILLIS 10
+#define EEPROM_START_COUNT 18
+#define EEPROM_STOP_COUNT 22
+
 //Android红外信号
 #define IR_CODE_ANDROID_ON 1088254603
 #define IR_CODE_ANDROID_OFF 3030512581
@@ -63,21 +82,19 @@ unsigned long duration=0;
 
 void setup() {
     Serial.begin(9600);
+    initEEPROM();
     pinMode(PIN_RELAY,OUTPUT);
     pinMode(PIN_LED_GREEN,OUTPUT);
     pinMode(PIN_LED_RED,OUTPUT);
-
-    
-    //红外线
-    irrecv.enableIRIn();
-
-    //音响
-    tmrpcm.speakerPin = PIN_SPEAKER;
 
     //SD卡
     if (!SD.begin(PIN_SD_CARD)) {
         Serial.println("SD fail");
     }
+    //音响
+    tmrpcm.speakerPin = PIN_SPEAKER;
+    //红外线
+    irrecv.enableIRIn();
 
     //播放开机声音
     tmrpcm.setVolume(audioVolume);
@@ -117,7 +134,59 @@ void loop() {
         handleIRSingnal(code);
         irrecv.resume();
     }
-    delay(100);
+    delay(70);
+}
+
+/**
+ * 开机初始化EEPROM
+ */
+unsigned long initEEPROM(){
+    //这里默认arduino已全部清零后，再执行本程序
+    //先检查版本号
+    unsigned long arduinoVersionCode=0;
+    EEPROM.get(EEPROM_ADDRESS_VERSION_CODE,arduinoVersionCode);
+    //如果版本号为0.说明这是第一次运行本程序
+    if(arduinoVersionCode==0){
+        //写入版本号
+        arduinoVersionCode=VERSION_CODE;
+        EEPROM.put(EEPROM_ADDRESS_VERSION_CODE,arduinoVersionCode);
+        //写入开机次数
+        unsigned long startupCount=1;
+        EEPROM.put(EEPROM_ADDRESS_STARTUP_COUNT,startupCount);
+        //写入音量
+        int audioVolume=4;
+        EEPROM.put(EEPROM_ADDRESS_VOLUME,audioVolume);
+        //写入总共烧的时长
+        unsigned long long heatedTimeMillis=0;
+        EEPROM.put(EEPROM_ADDRESS_HEATED_TIME_MILLIS,heatedTimeMillis);
+        //写入总开始烧水次数
+        unsigned long startCount=0;
+        EEPROM.put(EEPROM_START_COUNT,startCount);
+        //写入总停止烧水次数
+        unsigned long stopCount=0;
+        EEPROM.put(EEPROM_STOP_COUNT,stopCount);
+        
+        //看是不是我程序中最新的版本号
+    }else if(arduinoVersionCode==VERSION_CODE){
+        //如果是最新版本号
+        //读开机次数
+        unsigned long startupCount=0;
+        EEPROM.get(EEPROM_ADDRESS_STARTUP_COUNT, startupCount);
+        //加开机次数
+        //这里有bug，我不知道怎么修复。就是烧录启动会记两次，而reset正常，只记一次
+        startupCount++;
+        //写开机次数
+        EEPROM.put(EEPROM_ADDRESS_STARTUP_COUNT,startupCount);
+
+
+        unsigned long   lastHeatedTime;
+        EEPROM.get(EEPROM_ADDRESS_HEATED_TIME_MILLIS,lastHeatedTime);
+        Serial.println(lastHeatedTime);
+    }else{
+        //能到这里的情况是，有版本号，但是arduino和程序最新的版本号不一致
+        //说明需要升级操作
+        
+    }
 }
 
 /**
@@ -182,6 +251,14 @@ unsigned long calculateHeatedTime(){
  * 停止加热的时候
  */
 void onStopHeat(unsigned long heatedTime){
+    //把加热时长保存到EEPROM
+    //读之前的加热时长
+    unsigned long long lastHeatedTime;
+    EEPROM.get(EEPROM_ADDRESS_HEATED_TIME_MILLIS,lastHeatedTime);
+    //更新
+    lastHeatedTime=lastHeatedTime+heatedTime;
+    //保存
+    EEPROM.put(EEPROM_ADDRESS_HEATED_TIME_MILLIS,lastHeatedTime);
     //播放语音：烧了多长时间
     tmrpcm.play("h/a/heated.wav");
     waitForAudioPlayFinish();
