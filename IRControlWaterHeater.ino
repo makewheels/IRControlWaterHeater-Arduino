@@ -137,15 +137,21 @@ void loop() {
             //烧水时长，注意不是倒计时时长
             unsigned long heatedTimePeriod=calculateTimePeriod(heatStartTime,millis());
             //当结束烧水时
-            onStopHeat(heatedTimePeriod);
+            unsigned long long totalHeatedTime=onStopHeat(heatedTimePeriod);
             //播放语音：自动停止
             tmrpcm.play("h/autooff");
             waitForAudioPlayFinish();
-            //播放语音：烧了
-            tmrpcm.play("h/heated");
+            //播放语音：本次烧了
+            tmrpcm.play("h/curheat");
             waitForAudioPlayFinish();
-            //播放语音：多长时间
+            //播放语音：本次烧了多长时间
             speakTime(heatedTimePeriod);
+            waitForAudioPlayFinish();
+            //播放语音：总共烧了
+            tmrpcm.play("h/theated");
+            waitForAudioPlayFinish();
+            //播放语音：总共烧了多长时间
+            speakTime(totalHeatedTime);
         }
     }
     //接收红外信号
@@ -283,15 +289,16 @@ unsigned long calculateTimePeriod(unsigned long startTime,unsigned long endTime)
 /**
  * 停止加热的时候
  */
-void onStopHeat(unsigned long heatedTime){
+unsigned long long onStopHeat(unsigned long heatedTime){
     //把加热时长保存到EEPROM
     //读之前的加热时长
-    unsigned long long lastHeatedTime;
-    EEPROM.get(EEPROM_ADDRESS_HEATED_TIME_MILLIS,lastHeatedTime);
+    unsigned long long totalHeatedTime;
+    EEPROM.get(EEPROM_ADDRESS_HEATED_TIME_MILLIS,totalHeatedTime);
     //更新
-    lastHeatedTime=lastHeatedTime+heatedTime;
+    totalHeatedTime=totalHeatedTime+heatedTime;
     //保存
-    EEPROM.put(EEPROM_ADDRESS_HEATED_TIME_MILLIS,lastHeatedTime);
+    EEPROM.put(EEPROM_ADDRESS_HEATED_TIME_MILLIS,totalHeatedTime);
+    return totalHeatedTime;
 }
 
 /**
@@ -323,11 +330,20 @@ void handleIRSingnal(long long code){
             tmrpcm.play("h/manoff");
             //指示灯
             blinkForTime(PIN_LED_GREEN,2);
+            //当结束烧水时
+            unsigned long long totalHeatedTime=onStopHeat(heatedTimePeriod);
             waitForAudioPlayFinish();
-            //播放语音：烧了多长时间
-            tmrpcm.play("h/heated");
+            //播放语音：本次烧了
+            tmrpcm.play("h/curheat");
             waitForAudioPlayFinish();
+            //播放语音：本次烧了多长时间
             speakTime(heatedTimePeriod);
+            waitForAudioPlayFinish();
+            //播放语音：总共烧了
+            tmrpcm.play("h/theated");
+            waitForAudioPlayFinish();
+            //播放语音：总共烧了多长时间
+            speakTime(totalHeatedTime);
         }else{
             //如果已经停了
             //播放语音：已经停了
