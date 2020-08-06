@@ -28,7 +28,7 @@
 //startCount        开始烧水次数   unsigned long         4      18-21      18
 //stopCount         停止烧水次数   unsigned long         4      22-25      22
 
-#define VERSION_CODE 1    //版本号
+#define VERSION_CODE 1      //版本号
 #define EEPROM_ADDRESS_VERSION_CODE 0
 #define EEPROM_ADDRESS_STARTUP_COUNT 4
 #define EEPROM_ADDRESS_VOLUME 8
@@ -117,6 +117,10 @@ void setup() {
     unsigned long startupCount=0;
     EEPROM.get(EEPROM_ADDRESS_STARTUP_COUNT,startupCount);
     waitForAudioPlayFinish();
+    //播放语音：开机次数
+    tmrpcm.play("h/ttstart");
+    waitForAudioPlayFinish();
+    //播放语音：几次
     speakNumber(startupCount);
 }
 
@@ -376,6 +380,7 @@ void handleIRSingnal(long long code){
             speakNumber(audioVolume);
         }else{
             //如果已经到了最大音量
+            tmrpcm.play("h/maxvol");
         }
     }else if(code==IR_CODE_REMOTE_CONTROL_VOLUME_DOWN){
         //如果还没达到最小音量，还有减音空间
@@ -392,6 +397,7 @@ void handleIRSingnal(long long code){
             speakNumber(audioVolume);
         }else{
             //已经达到最小音量，不能再减少了
+            tmrpcm.play("h/minvol");
         }
     }else{
         //收到未知红外线指令
